@@ -1,0 +1,5 @@
+- load: modrinth
+  id: sodium
+  project: "sodium"
+  version: "mc1.20.1-0.5.13-fabric"
+  group: "gfx"

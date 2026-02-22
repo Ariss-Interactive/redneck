@@ -1,0 +1,14 @@
+pack:
+  id: "marpack"
+  name: "Marpack"
+  version: "1.0.0"
+
+versions:
+  minecraft: "1.0.0"
+  fabric: "0.16.7"
+
+builders:
+  mrpack:
+    summary: "Sorry, this is required."
+    include_files:
+      - "config/**"
