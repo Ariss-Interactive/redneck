@@ -5,10 +5,17 @@ import logging as log
 from pathlib import Path
 
 def build(args: Namespace):
-    groups_split = []
+    if args.builder == "list":
+        return
+
+    groups_split: set[str] = set()
     if args.groups != None:
-        groups_split = str(args.groups).split(",")
-        log.debug(f"Also using group(s) {groups_split}")
+        groups_split = {
+            group.strip()
+            for group in str(args.groups).split(",")
+            if group.strip()
+        }
+        log.debug(f"Also using group(s) {sorted(groups_split)}")
 
     proj = config.scan_project(Path("."))
     if proj == None:
@@ -23,10 +30,22 @@ def build(args: Namespace):
     log.info(f"Enumerated {len(proj.decls)} mods, resolving {len(used_mods)} mods")
 
     mods = resolver.resolve_mods(used_mods)
-    final_build = builder.build_project(args.builder, builder.ResolvedProject(proj.meta, mods))
+    project = builder.ResolvedProject(proj.meta, mods)
 
-    if final_build == None:
-        log.error("Build failed")
-        return
+    if args.builder == "all":
+        for b in list(builder._builders.keys()):
+            final_build = builder.build_project(b, project)
 
-    log.info(f"Built {final_build}")
+            if final_build == None:
+                log.error("Build failed")
+                return
+
+            log.info(f"Built {final_build}")
+    else:
+        final_build = builder.build_project(args.builder, project)
+
+        if final_build == None:
+            log.error("Build failed")
+            return
+
+        log.info(f"Built {final_build}")

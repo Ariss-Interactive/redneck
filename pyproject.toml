@@ -1,10 +1,18 @@
 [project]
 name = "redneck"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.8"
+description = "A small, plugin-driven, declarative modpack builder,"
 readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
-
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+maintainers = [
+  {name = "mjarduk", email = "mjarduk@gmail.com"}
+]
 packages = [
   { include = "redneck" },
   { include = "redplug" }
@@ -12,13 +20,17 @@ packages = [
 
 dependencies = [
     "coloredlogs>=15.0.1",
-    "importlib>=1.0.4",
-    "pathlib>=1.0.1",
     "pydantic>=2.12.5",
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
     "requests-cache>=1.2.1",
 ]
+
+[project.scripts]
+redneck = "redneck.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/Ariss-Interactive/redneck"
 
 [build-system]
 requires = ["hatchling"]
@@ -36,3 +48,9 @@ packages = ["redneck", "redplug"]
 
 [tool.pyright]
 typeCheckingMode = "basic"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "redneck/",
+  "redplug/",
+]

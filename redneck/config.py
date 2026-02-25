@@ -20,7 +20,9 @@ class ModpackMeta(BaseModel):
         version: str
 
     pack: PackInfo
-    versions: dict[str, str]
+    minecraft: str
+    loader: str
+    loader_version: str
     builders: dict[str, dict[str, Any]] = {}
 
 class ModDecl(BaseModel):
@@ -48,13 +50,31 @@ def scan_project(root: Path) -> RedneckProject | None:
         return None
 
     union_type = reduce(lambda a, b: a | b, _decls)
-    MOD_ADAPTER = TypeAdapter(Annotated[union_type, Field(discriminator="load")])
+    mod_adapter = TypeAdapter(Annotated[union_type, Field(discriminator="load")])
 
     mods = {}
 
     try:
         with open(root / "pack.yml", 'r') as stream:
             meta = load(stream, Loader=SafeLoader)
+
+            # Bodge to load the loader & loader name from yaml.
+            # I couldn't find a better way to do this, sorry.
+
+            versions = meta.pop("versions", {})
+            loaders = ["fabric-loader", "forge", "quilt-loader", "neoforge"]
+            minecraft = versions.get("minecraft")
+            
+            loader = next((i for i in versions if i in loaders), None)
+    
+            if not minecraft:
+                raise Exception("Missing \"minecraft\" in the \"versions\" block.", )
+            if not loader:
+                raise Exception(f"Missing a loader in the \"versions\" block. Declare one of: {", ".join(loaders)}.")
+
+            meta["minecraft"] = minecraft
+            meta["loader"] = loader
+            meta["loader_version"] = versions[loader]
 
         for file in list((root / 'mods').glob("*.yml")):
             with open(file, 'r') as stream:
@@ -71,7 +91,7 @@ def scan_project(root: Path) -> RedneckProject | None:
                     line = decl.pop("_line", None)
                     col = decl.pop("_col", None)
 
-                    mod = MOD_ADAPTER.validate_python(decl)
+                    mod = mod_adapter.validate_python(decl)
                     mod._from_file = file
                     mod._line = line
                     mod._col = col
@@ -83,5 +103,5 @@ def scan_project(root: Path) -> RedneckProject | None:
                     mods[id] = mod
 
         return RedneckProject(ModpackMeta(**meta), mods)
-    except ValidationError as e:
+    except Exception as e:
         log.error(f"Project scan failure:\n{e}")

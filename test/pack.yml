@@ -5,10 +5,9 @@ pack:
 
 versions:
   minecraft: "1.0.0"
-  fabric: "0.16.7"
+  fabric-loader: "0.16.7"
 
 builders:
   mrpack:
-    summary: "Sorry, this is required."
     include_files:
       - "config/**"

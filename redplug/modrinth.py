@@ -27,12 +27,14 @@ class ModrinthResolver(resolver.ModResolver[ModrinthModDecl]):
 
     def __init__(self) -> None:
         super().__init__()
-        self.session = CachedSession(".redneck/rinth_cache", 
-            backend="filesystem",
-            cache_control=True)
 
     @override
     def resolve(self, decl: ModrinthModDecl) -> resolver.ResolvedMod:
+        try:
+            self.session
+        except AttributeError:
+            self.session = CachedSession(".redneck/rinth_cache", backend="filesystem", cache_control=True)
+
         info = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}").json()
         ver = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}/version/{decl.version}").json()
 
@@ -47,14 +49,18 @@ class ModrinthResolver(resolver.ModResolver[ModrinthModDecl]):
         })
 
     def health_check(self, proj: config.RedneckProject, decl: ModrinthModDecl) -> list[str]:
+        try:
+            self.session
+        except AttributeError:
+            self.session = CachedSession(".redneck/rinth_cache", backend="filesystem", cache_control=True)
         warnings: list[str] = []
 
         # info = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}").json()
         ver = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}/version/{decl.version}").json()
 
-        if not any(loader in proj.meta.versions for loader in ver["loaders"]):
+        if not proj.meta.loader in ver["loaders"]:
             warnings.append(f"Unsupported loader. This mod version supports: {ver["loaders"]}")
-        if proj.meta.versions["minecraft"] not in ver["game_versions"]:
+        if proj.meta.minecraft not in ver["game_versions"]:
             warnings.append(f"Unsupported game version. This mod version supports: {ver["game_versions"]}")
 
         return warnings
@@ -65,8 +71,6 @@ class ModrinthBuilderConfig(BaseModel):
 class ModrinthBuilder(builder.ModpackBuilder[ModrinthBuilderConfig]):
     @override
     def build(self, proj: builder.ResolvedProject, root: Path, options: ModrinthBuilderConfig) -> Path:
-        print(options)
-
         build_path = root / ".redneck" / "build" / f"{proj.meta.pack.id}.mrpack"
 
         index = {
@@ -75,10 +79,24 @@ class ModrinthBuilder(builder.ModpackBuilder[ModrinthBuilderConfig]):
             "versionId": proj.meta.pack.version,
             "formatVersion": 1,
             "dependencies": {
-                "minecraft": proj.meta.versions["minecraft"],
+                "minecraft": proj.meta.minecraft,
             },
             "files": []
         }
+        index["dependencies"][proj.meta.loader] = proj.meta.loader_version
+
+        for mod in proj.mods:
+            file_decl = {
+                "path": f"mods/{mod.extra_info["filename"]}",
+                "hashes": {
+                    "sha1": mod.extra_info["sha1"],
+                    "sha512": mod.extra_info["sha512"]
+                },
+                "downloads": [mod.url],
+                "fileSize": mod.extra_info["size"]
+            }
+
+            index["files"].append(file_decl)
 
         includes: set[str] = set()
 

@@ -4,7 +4,7 @@ import logging as log
 import argparse
 from importlib.metadata import version
 from pathlib import Path
-from redneck.commands import build, groups, check
+from redneck.commands import build, groups, check, init
 from redneck import plugins, config, resolver, builder
 
 def main():
@@ -16,7 +16,7 @@ def main():
     subparser = parser.add_subparsers(dest="action")
     subparser.required = True
 
-    build_command = subparser.add_parser("build", help="Builds the project.")
+    build_command = subparser.add_parser("build", help="Builds the project. \"all\" builds w/ all builders. \"list\" lists all builders.")
     build_command.add_argument("-g", "--groups", help="The mod groups to include in the build.")
     build_command.add_argument("builder", help="The builder to use for building the modpack.")
 
@@ -26,6 +26,8 @@ def main():
     check_command = subparser.add_parser("check", help="Checks mod decls for validity.")
 
     plugins_command = subparser.add_parser("plugins", help="Lists the plugins loaded during startup.")
+
+    init_command = subparser.add_parser("init", help="Creates a bare-bones project.")
 
     if len(sys.argv)==1:
         parser.print_help(sys.stderr)
@@ -47,6 +49,8 @@ def main():
             check.check(args)
         case "plugins":
             plugins.plugins()
+        case "init":
+            init.init(args)
 
 if __name__ == "__main__":
     main()
