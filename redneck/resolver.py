@@ -1,4 +1,3 @@
-from csv import Error
 import logging as log
 from typing import Generic, TypeVar
 
@@ -25,7 +24,7 @@ def resolve_mods(proj: list[ModDecl]) -> list[ResolvedMod]:
     for decl in proj:
         try:
             mod = _resolvers[decl.load].resolve(decl)
-        except Error as e:
+        except Exception as e:
             log.error(f"Failed to resolve {decl.id}: {e}")
 
         mod.extra_info["resolver"] = decl.load
