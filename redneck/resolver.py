@@ -1,3 +1,4 @@
+from csv import Error
 import logging as log
 from typing import Generic, TypeVar
 
@@ -22,10 +23,15 @@ class ModResolver(Generic[T]):
 def resolve_mods(proj: list[ModDecl]) -> list[ResolvedMod]:
     mods = []
     for decl in proj:
-        mod = _resolvers[decl.load].resolve(decl)
-        mod.extra_info["resolver"] = decl.load
+        try:
+            mod = _resolvers[decl.load].resolve(decl)
+        except Error as e:
+            log.error(f"Failed to resolve {decl.id}: {e}")
 
+        mod.extra_info["resolver"] = decl.load
+ 
         mods.append(mod)
+
 
     return mods
 
