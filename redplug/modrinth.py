@@ -3,12 +3,13 @@ from redneck import builder, plugins, config, resolver
 import requests
 import glob
 import json
+import logging as log
 
 from zipfile import ZipFile
 from pathlib import Path
 from pydantic import BaseModel
 from requests_cache import CachedSession
-from typing import Literal, override
+from typing import Literal, Union, override
 
 class ModrinthPlugin(plugins.RedneckPlugin):
     def __init__(self):
@@ -65,8 +66,13 @@ class ModrinthResolver(resolver.ModResolver[ModrinthModDecl]):
 
         return warnings
 
+
+class _IncludeFile(BaseModel):
+    src: str
+    dest: str
+
 class ModrinthBuilderConfig(BaseModel):
-    include_files: list[str] = []
+    include_files: list[Union[str, _IncludeFile]] = []
 
 class ModrinthBuilder(builder.ModpackBuilder[ModrinthBuilderConfig]):
     @override
@@ -98,18 +104,33 @@ class ModrinthBuilder(builder.ModpackBuilder[ModrinthBuilderConfig]):
 
             index["files"].append(file_decl)
 
-        includes: set[str] = set()
+        includes: set[tuple[str, str]] = set()
+
+        log.debug(f"Resolving includes")
 
         for glop in options.include_files:
-            includes.update(glob.glob(glop, root_dir=root, recursive=True, include_hidden=True))
+            if isinstance(glop, str):
+                src = glop
+                dest = None
+            else:
+                src = glop.src
+                dest = glop.dest
 
-        with ZipFile(build_path, "w") as zip:
-            zip.writestr("modrinth.index.json", json.dumps(index, separators=(",", ":")))
-
-            for i in includes:
-                if (root / i).is_dir():
+            for hit in glob.glob(src, root_dir=root, recursive=True, include_hidden=True):
+                if (root / hit).is_dir():
                     continue
 
-                zip.write(i, f"overrides/{i}")
+                archive_path = f"overrides/{dest}/{Path(hit).name}" if dest else f"overrides/{hit}"
+                log.debug(f"{src} -> {Path(archive_path)}")
+                includes.add((hit, archive_path))
+
+
+
+        with ZipFile(build_path, "w") as zip:
+            log.debug(f"Building the archive")
+            zip.writestr("modrinth.index.json", json.dumps(index, separators=(",", ":")))
+
+            for src, dest in includes:
+                zip.write(src, dest)
 
         return build_path
