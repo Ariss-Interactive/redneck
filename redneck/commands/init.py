@@ -28,4 +28,4 @@ versions:
   version: "0.92.7+1.20.1\"""")
 
     log.info(f"Initialized empty redneck project in {root.absolute()}")
-    log.info(f"Hint: try building the project with \"redneck build mrpack\"")
+    log.info("hint: try building the project with \"redneck build mrpack\"")

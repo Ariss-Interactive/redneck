@@ -1,5 +1,5 @@
 from argparse import Namespace
-from redneck import config, resolver, builder
+from redneck import config, resolver, builder, diag
 
 import logging as log
 from pathlib import Path
@@ -18,8 +18,9 @@ def build(args: Namespace):
         log.debug(f"Also using group(s) {sorted(groups_split)}")
 
     proj = config.scan_project(Path("."))
-    if proj == None:
-        return    
+    if proj is None:
+        diag.error("build failed")
+        return
 
     used_mods: list[config.ModDecl] = []
 
@@ -30,22 +31,29 @@ def build(args: Namespace):
     log.info(f"Enumerated {len(proj.decls)} mods, resolving {len(used_mods)} mods")
 
     mods = resolver.resolve_mods(used_mods)
+    if mods is None:
+        diag.error("build failed")
+        return
+
     project = builder.ResolvedProject(proj.meta, mods)
 
-    if args.builder == "all":
-        for b in list(builder._builders.keys()):
-            final_build = builder.build_project(b, project)
+    failure = False
 
-            if final_build == None:
-                log.error("Build failed")
-                return
+    def build_w_builder(b):
+        nonlocal failure
+        final_build = builder.build_project(b, project)
 
-            log.info(f"Built {final_build}")
-    else:
-        final_build = builder.build_project(args.builder, project)
-
-        if final_build == None:
-            log.error("Build failed")
+        if final_build is None:
+            failure = True
             return
 
         log.info(f"Built {final_build}")
+
+    if args.builder == "all":
+        for b in list(builder._builders.keys()):
+            build_w_builder(b)
+    else:
+        build_w_builder(args.builder)
+
+    if failure:
+        diag.error("build failed")

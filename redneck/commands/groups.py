@@ -1,4 +1,6 @@
-from redneck import config, resolver, builder
+from redneck import config, diag
+
+from rich.tree import Tree
 
 from argparse import Namespace
 from pathlib import Path
@@ -6,10 +8,10 @@ import logging as log
 
 def groups(args: Namespace):
     proj = config.scan_project(Path("."))
-    if proj == None:
+    if proj is None:
         return
 
-    log.info(f"Enumerated {len(proj.decls)} mods")
+    log.debug(f"Enumerated {len(proj.decls)} mods")
 
     groups: dict[str, list[config.ModDecl]] = {}
 
@@ -19,13 +21,17 @@ def groups(args: Namespace):
 
         groups[decl.group].append(decl)
 
-    log.info(f"Found {len(groups)} groups:")
+    tree = Tree(f"{proj.meta.pack.id} ({len(groups)} groups)")
 
     if args.full:
         for group, mods in groups.items():
-            log.info(f"- {group}:")
+            count = len(mods)
+            group_el = tree.add(f"{group} ({count} {"mod" if count == 1 else "mods"})")
             for mod in mods:
-                log.info(f"  * {mod.id} ({mod._from_file}:{mod._line}:{mod._col})")
+                group_el.add(f"{mod.id} ({mod._from_file}:{mod._line}:{mod._col})")
     else:
         for group, mods in groups.items():
-            log.info(f"- {group}")
+            count = len(mods)
+            tree.add(f"{group} ({count} {"mod" if count == 1 else "mods"})")
+
+    diag.console.print(tree)

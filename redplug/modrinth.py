@@ -5,6 +5,7 @@ import glob
 import json
 import logging as log
 
+from time import sleep
 from zipfile import ZipFile
 from pathlib import Path
 from pydantic import BaseModel
@@ -36,8 +37,12 @@ class ModrinthResolver(resolver.ModResolver[ModrinthModDecl]):
         except AttributeError:
             self.session = CachedSession(".redneck/rinth_cache", backend="filesystem", cache_control=True)
 
-        info = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}").json()
-        ver = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}/version/{decl.version}").json()
+        info_req = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}")
+        info_req.raise_for_status()
+        info = info_req.json()
+        ver_req = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}/version/{decl.version}")
+        ver_req.raise_for_status()
+        ver = ver_req.json()
 
         file = ver["files"][decl.file]
 
@@ -57,9 +62,12 @@ class ModrinthResolver(resolver.ModResolver[ModrinthModDecl]):
         warnings: list[str] = []
 
         # info = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}").json()
-        ver = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}/version/{decl.version}").json()
+        req = self.session.get(f"https://api.modrinth.com/v2/project/{decl.project}/version/{decl.version}")
+        req.raise_for_status()
 
-        if not proj.meta.loader in ver["loaders"]:
+        ver = req.json()
+
+        if proj.meta.loader not in ver["loaders"]:
             warnings.append(f"Unsupported loader. This mod version supports: {ver["loaders"]}")
         if proj.meta.minecraft not in ver["game_versions"]:
             warnings.append(f"Unsupported game version. This mod version supports: {ver["game_versions"]}")
@@ -76,8 +84,9 @@ class ModrinthBuilderConfig(BaseModel):
 
 class ModrinthBuilder(builder.ModpackBuilder[ModrinthBuilderConfig]):
     @override
-    def build(self, proj: builder.ResolvedProject, root: Path, options: ModrinthBuilderConfig) -> Path:
+    def build(self, proj: builder.ResolvedProject, root: Path, options: ModrinthBuilderConfig | None) -> Path:
         build_path = root / ".redneck" / "build" / f"{proj.meta.pack.id}.mrpack"
+        options = options or ModrinthBuilderConfig()
 
         index = {
             "game": "minecraft",
@@ -106,7 +115,7 @@ class ModrinthBuilder(builder.ModpackBuilder[ModrinthBuilderConfig]):
 
         includes: set[tuple[str, str]] = set()
 
-        log.debug(f"Resolving includes")
+        log.debug("Resolving includes")
 
         for glop in options.include_files:
             if isinstance(glop, str):
@@ -127,7 +136,7 @@ class ModrinthBuilder(builder.ModpackBuilder[ModrinthBuilderConfig]):
 
 
         with ZipFile(build_path, "w") as zip:
-            log.debug(f"Building the archive")
+            log.debug("Building the archive")
             zip.writestr("modrinth.index.json", json.dumps(index, separators=(",", ":")))
 
             for src, dest in includes:

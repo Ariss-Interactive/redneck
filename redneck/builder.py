@@ -1,9 +1,13 @@
-from redneck import config, resolver
+from time import sleep
+import threading
+from redneck import config, resolver, diag
 
 import logging as log
-from traceback import format_exc
+
+from rich.progress import Progress
+from rich.live import Live
 from typing import Generic, TypeVar
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from pathlib import Path
 
 T = TypeVar("T", bound=BaseModel)
@@ -35,11 +39,20 @@ def build_project(id: str, proj: ResolvedProject) -> Path | None:
         raw = proj.meta.builders.get(id, {})
         try:
             config = _configs[id].model_validate(raw)
-        except Exception as e:
-            log.error(f"In pack.yml:\n{e}")
+        except ValidationError as e:
+            diag.console.print(f"[bold red]error:[/] builder config \"{id}\" parse failure")
+            for err in e.errors():
+                loc = " -> ".join(str(l) for l in err["loc"])
+                diag.console.print(f"   [bold cyan]=[/] [bold]error[/]\\[{loc}]: {err["msg"]}")
             return None
 
     try:
-        return _builders[id].build(proj, root, config)
+        progress = Progress(console=diag.console)
+
+        with Live(progress, console=diag.console, vertical_overflow="visible", transient=True):
+            task = progress.add_task("Building...", total=None)
+            build = _builders[id].build(proj, root, config)
+            progress.update(task, description="[green]Built![/]")
+            return build
     except Exception as e:
-        log.exception(e)
+        diag.error(f"builder \"{id}\" failure", e)

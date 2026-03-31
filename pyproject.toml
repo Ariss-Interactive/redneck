@@ -1,11 +1,11 @@
 [project]
 name = "redneck"
-version = "0.2.1"
+version = "0.3.0-rc.1"
 description = "A small, plugin-driven, declarative modpack builder,"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
@@ -19,11 +19,11 @@ packages = [
 ]
 
 dependencies = [
-    "coloredlogs>=15.0.1",
     "pydantic>=2.12.5",
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
     "requests-cache>=1.2.1",
+    "rich>=14.3.3",
 ]
 
 [project.scripts]

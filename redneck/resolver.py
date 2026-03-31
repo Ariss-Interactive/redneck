@@ -1,6 +1,10 @@
 import logging as log
+
+from rich.progress import Progress
+from rich.live import Live
 from typing import Generic, TypeVar
 
+from redneck import diag
 from redneck.config import ModDecl, RedneckProject
 
 T = TypeVar("T", bound=ModDecl)
@@ -19,20 +23,26 @@ class ModResolver(Generic[T]):
     def health_check(self, proj: RedneckProject, decl: T) -> list[str]:
         raise NotImplementedError
 
-def resolve_mods(proj: list[ModDecl]) -> list[ResolvedMod]:
+def resolve_mods(proj: list[ModDecl]) -> list[ResolvedMod] | None:
     mods = []
-    for decl in proj:
-        try:
-            mod = _resolvers[decl.load].resolve(decl)
-        except Exception as e:
-            log.error(f"Failed to resolve {decl.id}: {e}")
+    failed = False
 
-        mod.extra_info["resolver"] = decl.load
- 
-        mods.append(mod)
+    progress = Progress(console=diag.console)
 
+    with Live(progress, console=diag.console, vertical_overflow="visible", transient=True):
+        task = progress.add_task("Resolving...", total=len(proj))
+        for decl in proj:
+            try:
+                mod = _resolvers[decl.load].resolve(decl)
+                mod.extra_info["resolver"] = decl.load
+                mods.append(mod)
+            except Exception as e:
+                diag.error(f"Failed to resolve [cyan]{decl.id}[/]", e)
 
-    return mods
+                failed = True
+            progress.advance(task)
+
+    return mods if not failed else None
 
 def health_check(proj: RedneckProject) -> dict[str, list[str]]:
     warnings = {}
