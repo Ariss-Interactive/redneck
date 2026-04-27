@@ -1,6 +1,6 @@
 [project]
 name = "redneck"
-version = "0.3.0"
+version = "0.3.1"
 description = "A small, plugin-driven, declarative modpack builder,"
 readme = "README.md"
 license = "GPL-3.0-or-later"

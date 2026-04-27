@@ -12,7 +12,7 @@ def build(args: Namespace):
         return
 
     groups_split: set[str] = set()
-    if args.groups != None:
+    if args.groups is not None:
         groups_split = {
             group.strip()
             for group in str(args.groups).split(",")

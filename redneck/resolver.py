@@ -1,7 +1,4 @@
-import logging as log
-
 from rich.progress import Progress
-from rich.live import Live
 from typing import Generic, TypeVar
 
 from redneck import diag

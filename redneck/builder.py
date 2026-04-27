@@ -1,11 +1,5 @@
-from time import sleep
-import threading
 from redneck import config, resolver, diag
 
-import logging as log
-
-from rich.progress import Progress
-from rich.live import Live
 from typing import Generic, TypeVar
 from pydantic import BaseModel, ValidationError
 from pathlib import Path
