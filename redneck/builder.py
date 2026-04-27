@@ -47,12 +47,6 @@ def build_project(id: str, proj: ResolvedProject) -> Path | None:
             return None
 
     try:
-        progress = Progress(console=diag.console)
-
-        with Live(progress, console=diag.console, vertical_overflow="visible", transient=True):
-            task = progress.add_task("Building...", total=None)
-            build = _builders[id].build(proj, root, config)
-            progress.update(task, description="[green]Built![/]")
-            return build
+        return _builders[id].build(proj, root, config)
     except Exception as e:
         diag.error(f"builder \"{id}\" failure", e)

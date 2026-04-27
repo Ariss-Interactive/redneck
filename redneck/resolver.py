@@ -23,24 +23,21 @@ class ModResolver(Generic[T]):
     def health_check(self, proj: RedneckProject, decl: T) -> list[str]:
         raise NotImplementedError
 
-def resolve_mods(proj: list[ModDecl]) -> list[ResolvedMod] | None:
+def resolve_mods(proj: list[ModDecl], prog: Progress) -> list[ResolvedMod] | None:
     mods = []
     failed = False
 
-    progress = Progress(console=diag.console)
+    task = prog.add_task("Resolving...", total=len(proj))
+    for decl in proj:
+        try:
+            mod = _resolvers[decl.load].resolve(decl)
+            mod.extra_info["resolver"] = decl.load
+            mods.append(mod)
+        except Exception as e:
+            diag.error(f"Failed to resolve [cyan]{decl.id}[/]", e)
 
-    with Live(progress, console=diag.console, vertical_overflow="visible", transient=True):
-        task = progress.add_task("Resolving...", total=len(proj))
-        for decl in proj:
-            try:
-                mod = _resolvers[decl.load].resolve(decl)
-                mod.extra_info["resolver"] = decl.load
-                mods.append(mod)
-            except Exception as e:
-                diag.error(f"Failed to resolve [cyan]{decl.id}[/]", e)
-
-                failed = True
-            progress.advance(task)
+            failed = True
+        prog.advance(task)
 
     return mods if not failed else None
 

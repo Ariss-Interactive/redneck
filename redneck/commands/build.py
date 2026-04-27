@@ -1,6 +1,9 @@
 from argparse import Namespace
 from redneck import config, resolver, builder, diag
 
+from rich.live import Live
+from rich.progress import Progress
+
 import logging as log
 from pathlib import Path
 
@@ -30,15 +33,6 @@ def build(args: Namespace):
 
     log.info(f"Enumerated {len(proj.decls)} mods, resolving {len(used_mods)} mods")
 
-    mods = resolver.resolve_mods(used_mods)
-    if mods is None:
-        diag.error("build failed")
-        return
-
-    project = builder.ResolvedProject(proj.meta, mods)
-
-    failure = False
-
     def build_w_builder(b):
         nonlocal failure
         final_build = builder.build_project(b, project)
@@ -49,11 +43,27 @@ def build(args: Namespace):
 
         log.info(f"Built {final_build}")
 
-    if args.builder == "all":
-        for b in list(builder._builders.keys()):
-            build_w_builder(b)
-    else:
-        build_w_builder(args.builder)
+    progress = Progress(console=diag.console)
+
+    with Live(progress, console=diag.console, vertical_overflow="visible", transient=True):
+        build_task = progress.add_task("Building...", total=None)
+
+        mods = resolver.resolve_mods(used_mods, progress)
+        if mods is None:
+            diag.error("build failed")
+            return
+
+        project = builder.ResolvedProject(proj.meta, mods)
+
+        failure = False
+
+        if args.builder == "all":
+            for b in list(builder._builders.keys()):
+                build_w_builder(b)
+        else:
+            build_w_builder(args.builder)
+
+        progress.update(build_task, description="[green]Built![/]")
 
     if failure:
         diag.error("build failed")
