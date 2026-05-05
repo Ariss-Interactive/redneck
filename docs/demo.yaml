@@ -1,0 +1,74 @@
+settings:
+  width: 80
+  height: 24
+
+  title: redneck demo
+
+instructions:
+  - !Command
+    command: "mkdir demo; cd demo/"
+    hidden: true
+  - !Command
+    command: "alias cat='bat -p'"
+    hidden: true
+  - !Command
+    command: "# hey! this is a demo for the redneck build system"
+  - !Wait 1s
+  - !Command
+    command: "# let's make a simple modpack"
+  - !Wait 1s
+  - !Marker Pack init
+  - !Command
+    command: "redneck init"
+  - !Wait 1s
+  - !Command
+    command: "tree"
+  - !Wait 1s
+  - !Command
+    command: "# now, check the manifest"
+  - !Wait 1s
+  - !Command
+    command: "cat pack.yml"
+  - !Wait 5s
+  - !Command
+    command: "# solid! let's see our mods"
+  - !Wait 1s
+  - !Marker Mods & groups
+  - !Command
+    command: |
+      printf '\n\n- load: modrinth\n  id: lithium-core\n  project: ferrite-core\n  version: 7.0.3-fabric\n  group: "optimizations"\n' >> mods/hello.yml
+    hidden: true
+  - !Command
+    command: "cat mods/hello.yml"
+  - !Wait 5s
+  - !Marker Building
+  - !Command
+    command: "# all good, let's build our modpack."
+  - !Wait 1s
+  - !Command
+    command: "redneck -v build modlist"
+  - !Wait 1s
+  - !Command
+    command: "cat .redneck/build/modlist.html"
+  - !Wait 2s
+  - !Command
+    command: |
+      # it seems we're missing ferrite core
+      # that's because we haven't included the group "optimizations" into the build
+      # let's do so now
+  - !Wait 1s
+  - !Command
+    command: "redneck build modlist -g \"optimizations\" "
+  - !Wait 1s
+  - !Command
+    command: "cat .redneck/build/modlist.html"
+  - !Wait 3s
+  - !Command
+    command: |
+      # and there you have it!
+      # this was redneck, signing off.
+      # to install, run:
+      # pip install redneck
+  - !Command
+    command: "cd ../; rm -rf demo/"
+    hidden: true

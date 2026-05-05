@@ -11,3 +11,9 @@ builders:
   mrpack:
     include_files:
       - "config/**"
+
+default_profile: "base"
+profiles:
+  base:
+    groups:
+      - gfx

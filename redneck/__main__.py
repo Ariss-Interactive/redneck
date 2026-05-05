@@ -31,7 +31,8 @@ def main():
 
     build_command = subparser.add_parser("build", help="Builds the project. \"all\" builds w/ all builders. \"list\" lists all builders.")
     build_command.add_argument("-g", "--groups", help="The mod groups to include in the build.")
-    build_command.add_argument("builder", help="The builder to use for building the modpack.")
+    build_command.add_argument("-b", "--builder", help="The builder to use for building the modpack. If omitted, the profile's builder will be used.", default=None)
+    build_command.add_argument("profile", help="The default profile to use for building. If omitted, the default profile or \"base\" will be used.", default=None, nargs="?")
     build_command.set_defaults(func=build.build)
 
     groups_command = subparser.add_parser("groups", help="Lists the groups defined in the mods.")

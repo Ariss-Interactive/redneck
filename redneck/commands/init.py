@@ -19,7 +19,13 @@ def init(args: Namespace):
 
 versions:
   minecraft: "1.20.1"
-  fabric-loader: "0.18.4\"""")
+  fabric-loader: "0.18.4\"
+
+default_profile: "base"
+profiles:
+  base:
+    groups:
+      - cool_group""")
 
     with open(mods / "hello.yml", "w") as f:
         f.write("""- load: modrinth

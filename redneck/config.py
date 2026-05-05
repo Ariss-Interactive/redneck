@@ -16,6 +16,11 @@ class ModDeclLoader(SafeLoader):
 
         return mapping
 
+class ModpackProfile(BaseModel):
+    depends: str = "base"
+    builder: str = "mrpack"
+    groups: set[str] = set()
+
 class ModpackMeta(BaseModel):
     class PackInfo(BaseModel):
         id: str
@@ -27,6 +32,10 @@ class ModpackMeta(BaseModel):
     loader: str
     loader_version: str
     builders: dict[str, dict[str, Any]] = {}
+    default_profile: str = "base"
+    profiles: dict[str, ModpackProfile] = {
+        "base": ModpackProfile()
+    }
 
 class ModDecl(BaseModel):
     id: str
@@ -128,5 +137,5 @@ def scan_project(root: Path) -> RedneckProject | None:
                     mods[id] = mod
 
         return RedneckProject(ModpackMeta(**meta), mods) if not failed else None
-    except Exception:
-        diag.error("project scan failure")
+    except Exception as e:
+        diag.error("project scan failure: ", e)
