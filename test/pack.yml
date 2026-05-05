@@ -12,8 +12,8 @@ builders:
     include_files:
       - "config/**"
 
-default_profile: "base"
+default_profile: "better"
 profiles:
-  base:
+  better:
     groups:
       - gfx

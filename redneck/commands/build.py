@@ -37,7 +37,7 @@ def build(args: Namespace):
     current = sel_profile
 
     if current not in proj.meta.profiles:
-        diag.error("unkown profile")
+        diag.error(f"unkown profile \"{current}\"")
         return
 
     seen = set()

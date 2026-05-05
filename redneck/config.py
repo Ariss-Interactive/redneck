@@ -5,7 +5,7 @@ from functools import reduce
 from pathlib import Path
 from typing import Annotated, Any, ClassVar
 from yaml import load, SafeLoader, YAMLError
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, TypeAdapter, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, TypeAdapter, ValidationError, model_validator
 
 class ModDeclLoader(SafeLoader):
     def construct_mapping(self, node, deep=False):
@@ -36,6 +36,11 @@ class ModpackMeta(BaseModel):
     profiles: dict[str, ModpackProfile] = {
         "base": ModpackProfile()
     }
+
+    @model_validator(mode="after")
+    def ensure_base_profile(self):
+        self.profiles.setdefault("base", ModpackProfile())
+        return self
 
 class ModDecl(BaseModel):
     id: str
